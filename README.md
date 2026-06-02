@@ -53,10 +53,12 @@ No topo da tela há um seletor de papel:
 
 - **Loja** → cadastra promoções (`POST /deals`) e mostra o status de validação.
 - **Consumidor** → lista promoções (`GET /deals`), vota 👍/👎 (`POST /vote`),
-  segue e cancela categorias de interesse (`POST` / `DELETE /subscription`).
+  segue e cancela categorias de interesse (`POST` / `DELETE /subscription`) e
+  recebe **notificações em tempo real** (SSE) das categorias seguidas — elas
+  aparecem como toasts no canto da tela e atualizam a lista automaticamente.
 
 Não há login: você só informa um **nome** (usado para identificar a loja ou o cliente).
-O nome e o papel ficam salvos no navegador (localStorage).
+O nome e o papel ficam salvos no navegador (sessionStorage).
 
 ---
 
@@ -124,6 +126,10 @@ React (:5173)  →  GET /api/deals  →  Vite proxy  →  GET /deals em :4000  �
    (mesma origem, sem CORS)                          (servidor↔servidor, sem CORS)
 ```
 
+O mesmo proxy serve o stream SSE: o `EventSource` abre
+`/api/notifications/<nome>`, que o Vite repassa para
+`GET /notifications/<nome>` em `:4000` mantendo a conexão aberta.
+
 > **E em produção?** Se o frontend buildado for servido em outro host/porta, o proxy de dev
 > não existe mais. Aí sim seria necessário **adicionar CORS no Gateway** (um plug que envie
 > `Access-Control-Allow-Origin` e responda ao `OPTIONS`).
@@ -136,18 +142,21 @@ React (:5173)  →  GET /api/deals  →  Vite proxy  →  GET /deals em :4000  �
 src/
 ├── api/client.ts                  # wrappers das rotas REST (base "/api")
 ├── types.ts                       # Deal, NewDeal, Vote, SubscriptionResponse
-├── context/SessionContext.tsx     # papel (loja/consumidor) + nome (localStorage)
+├── context/SessionContext.tsx     # papel (loja/consumidor) + nome (sessionStorage)
 ├── hooks/useDeals.ts              # carrega GET /deals
-├── hooks/useSSE.ts                # stub do EventSource (SSE — fase futura)
+├── hooks/useSSE.ts                # EventSource em GET /notifications/:client_name
 └── components/
     ├── Navbar.tsx                  # alterna papel loja/consumidor
     ├── RoleGate.tsx                # define o nome da sessão
-    ├── ConsumerView.tsx            # listar, filtrar, votar, interesses
+    ├── ConsumerView.tsx            # listar, filtrar, votar, interesses, SSE
     ├── StoreView.tsx               # cadastrar promoção
     ├── DealCard.tsx                # card com botões 👍 / 👎
+    ├── NotificationToasts.tsx      # toasts das notificações SSE
     └── SubscriptionPanel.tsx       # seguir / cancelar categorias
 ```
 
-> **SSE:** as notificações em tempo real estão preparadas em `src/hooks/useSSE.ts`, mas
-> desativadas — o Gateway ainda não expõe um endpoint de eventos. Quando existir
-> (`GET /events?client=<nome>`), basta habilitar o hook.
+> **SSE:** as notificações em tempo real chegam pelo endpoint
+> `GET /notifications/:client_name` do Gateway (Server-Sent Events). O hook
+> `src/hooks/useSSE.ts` abre um `EventSource` para o cliente logado; cada evento
+> traz a promoção (`{ tipo, categoria, promo, ... }`) das categorias seguidas. O
+> `ConsumerView` mostra um toast e recarrega a lista a cada notificação.

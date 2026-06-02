@@ -23,7 +23,7 @@ const SessionContext = createContext<SessionContextValue | null>(null);
 
 function load(): Session {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = sessionStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw) as Session;
   } catch {
     /* ignora JSON invalido */
@@ -37,7 +37,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session>(load);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
   }, [session]);
 
   const value: SessionContextValue = {

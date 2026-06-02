@@ -25,3 +25,17 @@ export interface SubscriptionResponse {
 }
 
 export type Role = "consumer" | "store";
+
+// Notificacao recebida via SSE em GET /notifications/:client_name.
+// Formato montado pelo MS Notificacao
+// (../what-a-deal/apps/notificacao/lib/notificacao/consumer.ex):
+//   - tipo "nova"     -> nova promocao publicada na categoria
+//   - tipo "hot deal" -> promocao em destaque (ranking)
+export interface SSENotification {
+  tipo: "nova" | "hot deal" | string;
+  categoria: string;
+  promo_id: string;
+  source: string;
+  timestamp: string;
+  promo: Deal;
+}

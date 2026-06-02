@@ -1,7 +1,7 @@
 import type { Vote } from "./types";
 
 // Controle local de votos: cada cliente tem direito a UM voto por promocao.
-// Guardamos cliente -> { dealId: voto } em localStorage, para que o limite
+// Guardamos cliente -> { dealId: voto } em sessionStorage, para que o limite
 // persista entre recarregamentos da pagina.
 const KEY = "wad.votes";
 
@@ -9,7 +9,7 @@ type Store = Record<string, Record<string, Vote>>;
 
 function read(): Store {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = sessionStorage.getItem(KEY);
     if (raw) return JSON.parse(raw) as Store;
   } catch {
     /* ignora JSON invalido */
@@ -18,7 +18,7 @@ function read(): Store {
 }
 
 function write(store: Store): void {
-  localStorage.setItem(KEY, JSON.stringify(store));
+  sessionStorage.setItem(KEY, JSON.stringify(store));
 }
 
 const key = (name: string) => name.trim().toLowerCase();

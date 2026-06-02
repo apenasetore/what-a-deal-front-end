@@ -1,11 +1,34 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useDeals } from "../hooks/useDeals";
+import { useSSE } from "../hooks/useSSE";
+import { useSession } from "../context/SessionContext";
 import { DealCard } from "./DealCard";
 import { SubscriptionPanel } from "./SubscriptionPanel";
+import { NotificationToasts, type Toast } from "./NotificationToasts";
+import type { SSENotification } from "../types";
 
 export function ConsumerView() {
+  const { name } = useSession();
   const { deals, loading, error, refresh } = useDeals();
   const [filter, setFilter] = useState<string>("");
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  // Ao chegar uma notificacao das categorias seguidas: mostra um toast e
+  // recarrega a lista para exibir a promocao recem-publicada.
+  const handleNotification = useCallback(
+    (n: SSENotification) => {
+      setToasts((prev) => [{ ...n, key: Date.now() + Math.random() }, ...prev].slice(0, 5));
+      refresh();
+    },
+    [refresh],
+  );
+
+  useSSE(name, handleNotification);
+
+  const dismissToast = useCallback(
+    (key: number) => setToasts((prev) => prev.filter((t) => t.key !== key)),
+    [],
+  );
 
   const categories = useMemo(
     () => Array.from(new Set(deals.map((d) => d.categoria))).sort(),
@@ -16,6 +39,7 @@ export function ConsumerView() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
+      <NotificationToasts toasts={toasts} onDismiss={dismissToast} />
       <section>
         <div className="mb-4 flex items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">

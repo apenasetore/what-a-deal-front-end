@@ -2,14 +2,14 @@ import type { Role } from "./types";
 
 // Registro local de identidades: cada nome pertence a UM papel (loja ou cliente).
 // Assim, um nome usado como loja nao pode entrar como cliente, e vice-versa.
-// Persistido em localStorage (chave separada da sessao atual).
+// Persistido em sessionStorage (chave separada da sessao atual).
 const KEY = "wad.identities";
 
 type Registry = Record<string, Role>;
 
 function read(): Registry {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = sessionStorage.getItem(KEY);
     if (raw) return JSON.parse(raw) as Registry;
   } catch {
     /* ignora JSON invalido */
@@ -18,7 +18,7 @@ function read(): Registry {
 }
 
 function write(reg: Registry): void {
-  localStorage.setItem(KEY, JSON.stringify(reg));
+  sessionStorage.setItem(KEY, JSON.stringify(reg));
 }
 
 // Chave normalizada para evitar duplicar "Loja" e "loja".
