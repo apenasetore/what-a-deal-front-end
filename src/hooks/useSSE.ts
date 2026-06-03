@@ -3,13 +3,14 @@ import type { SSENotification } from "../types";
 
 export type { SSENotification } from "../types";
 
-// Conecta no endpoint SSE do Gateway (GET /notifications/:client_name) via
-// proxy do Vite (/api/notifications/...). O Gateway mantem a conexao aberta e
-// envia um evento `data: <json>` por notificacao das categorias que o cliente
-// segue (ver ../what-a-deal/apps/gateway/lib/gateway/sse_handler.ex).
+// Conecta no endpoint SSE do Gateway (GET /stream/:client_name) via proxy do
+// Vite (/api/stream/...). O Gateway mantem a conexao aberta e envia um evento
+// `data: <json>` por notificacao das categorias que o cliente segue
+// (ver ../what-a-deal/apps/gateway/lib/gateway/sse_module.ex — Gateway.SSE).
 //
-// Comentarios de keepalive (linhas iniciadas por ":") nao disparam onmessage,
-// entao nao chegam aqui — somente os eventos de dados reais.
+// As notificacoes sao enviadas SEM nome de evento, entao chegam em onmessage.
+// O evento inicial `ready` (nomeado) e ignorado de proposito, e comentarios de
+// keepalive (linhas iniciadas por ":") tambem nao disparam onmessage.
 export function useSSE(
   clientName: string,
   onNotification: (n: SSENotification) => void,
@@ -23,7 +24,11 @@ export function useSSE(
   useEffect(() => {
     if (!enabled || !clientName) return;
 
-    const url = `/api/notifications/${encodeURIComponent(clientName)}`;
+    // Conecta DIRETO no gateway (porta 4000), sem passar pelo proxy do Vite:
+    // o proxy de dev costuma derrubar conexoes SSE de longa duracao. O gateway
+    // libera CORS na resposta do /stream. Os demais endpoints REST continuam
+    // pelo proxy /api (requests curtos, sem problema).
+    const url = `http://${window.location.hostname}:4000/stream/${encodeURIComponent(clientName)}`;
     const source = new EventSource(url);
 
     source.onmessage = (event) => {

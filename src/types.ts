@@ -26,9 +26,10 @@ export interface SubscriptionResponse {
 
 export type Role = "consumer" | "store";
 
-// Notificacao recebida via SSE em GET /notifications/:client_name.
-// Formato montado pelo MS Notificacao
-// (../what-a-deal/apps/notificacao/lib/notificacao/consumer.ex):
+// Notificacao recebida via SSE em GET /stream/:client_name.
+// O Gateway repassa o formato montado pelo MS Notificacao e tambem normaliza
+// os destaques do MS Ranking neste mesmo shape
+// (../what-a-deal/apps/gateway/lib/gateway/consumer.ex):
 //   - tipo "nova"     -> nova promocao publicada na categoria
 //   - tipo "hot deal" -> promocao em destaque (ranking)
 export interface SSENotification {
