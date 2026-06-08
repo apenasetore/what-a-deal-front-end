@@ -11,15 +11,19 @@ export function Login() {
   const { login } = useSession();
   const [role, setRole] = useState<Role>("consumer");
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const result = login(role, name);
+    const result = login(role, name, role === "store" ? email : "");
     if (!result.ok) setError(result.error ?? "Não foi possível entrar.");
   }
 
   const selected = ROLES.find((r) => r.key === role)!;
+
+  // Loja precisa de nome e email; consumidor só do nome.
+  const disabled = !name.trim() || (role === "store" && !email.trim());
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
@@ -70,14 +74,28 @@ export function Login() {
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
           </div>
-
+          {role === "store" && (
+            <div>
+              <label className="text-sm font-medium text-slate-600">E-mail da loja</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setError(null);
+                }}
+                placeholder="Ex: loja@dominio.com"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+            </div>
+          )}
           {error && (
             <p className="rounded-lg bg-rose-50 p-2.5 text-sm text-rose-600">{error}</p>
           )}
 
           <button
             type="submit"
-            disabled={!name.trim()}
+            disabled={disabled}
             className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
           >
             Entrar

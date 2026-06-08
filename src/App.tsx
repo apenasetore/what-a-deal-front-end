@@ -7,7 +7,6 @@ import { SessionProvider, useSession } from "./context/SessionContext";
 function Content() {
   const { role, name } = useSession();
 
-  // Sem nome/papel definido = nao logado.
   if (!name || !role) return <Login />;
 
   return (

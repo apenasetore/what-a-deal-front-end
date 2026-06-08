@@ -2,18 +2,15 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { Role } from "../types";
 import { claim } from "../identity";
 
-// O backend nao possui autenticacao. A "sessao" e o papel atual (loja ou
-// consumidor) + o nome. A identidade e fixada no login: um nome cadastrado
-// como loja nao pode entrar como cliente (e vice-versa). `name` vazio = deslogado.
+
 interface Session {
   role: Role | null;
   name: string;
+  email: string;
 }
 
 interface SessionContextValue extends Session {
-  // Tenta entrar. Retorna erro se o nome pertencer ao outro papel.
-  login: (role: Role, name: string) => { ok: boolean; error?: string };
-  // Sai da sessao atual (mantem o registro de identidades).
+  login: (role: Role, name: string, email: string) => { ok: boolean; error?: string };
   logout: () => void;
 }
 
@@ -26,9 +23,8 @@ function load(): Session {
     const raw = sessionStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw) as Session;
   } catch {
-    /* ignora JSON invalido */
   }
-  return { role: null, name: "" };
+  return { role: null, name: "", email: "" };
 }
 
 const roleLabel = (r: Role) => (r === "store" ? "loja" : "cliente");
@@ -42,9 +38,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const value: SessionContextValue = {
     ...session,
-    login: (role, rawName) => {
+    login: (role, rawName, rawEmail) => {
       const name = rawName.trim();
+      const email = rawEmail.trim();
       if (!name) return { ok: false, error: "Informe um nome." };
+      if (role === "store" && !email) return { ok: false, error: "Informe um email." };
 
       const result = claim(name, role);
       if (!result.ok) {
@@ -56,10 +54,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         };
       }
 
-      setSession({ role, name });
+      setSession({ role, name, email });
       return { ok: true };
     },
-    logout: () => setSession({ role: null, name: "" }),
+    logout: () => setSession({ role: null, name: "", email: "" }),
   };
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

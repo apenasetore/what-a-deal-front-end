@@ -20,7 +20,6 @@ export async function listDeals(): Promise<Deal[]> {
   return handle<Deal[]>(res);
 }
 
-// POST /deals — loja cadastra uma promocao (entra no fluxo de validacao).
 export interface CreateDealResponse {
   message: string;
   data: { promo_data: NewDeal; status: string };
@@ -35,7 +34,6 @@ export async function createDeal(payload: NewDeal): Promise<CreateDealResponse> 
   return handle<CreateDealResponse>(res);
 }
 
-// POST /vote — registra voto (up/down) em uma promocao.
 export async function vote(promo: Deal, voteValue: Vote): Promise<{ message: string }> {
   const res = await fetch(`${BASE}/vote`, {
     method: "POST",
@@ -45,7 +43,6 @@ export async function vote(promo: Deal, voteValue: Vote): Promise<{ message: str
   return handle<{ message: string }>(res);
 }
 
-// POST /subscription — consumidor segue uma categoria.
 export async function subscribe(client_name: string, category: string): Promise<{ message: string }> {
   const res = await fetch(`${BASE}/subscription`, {
     method: "POST",
@@ -55,7 +52,6 @@ export async function subscribe(client_name: string, category: string): Promise<
   return handle<{ message: string }>(res);
 }
 
-// DELETE /subscription — consumidor cancela interesse; retorna lista atualizada.
 export async function unsubscribe(
   client_name: string,
   category: string,
@@ -68,7 +64,6 @@ export async function unsubscribe(
   return handle<SubscriptionResponse>(res);
 }
 
-// GET /subscription/:cliente_name — categorias seguidas pelo cliente.
 export async function getSubscriptions(client_name: string): Promise<string[]> {
   const res = await fetch(`${BASE}/subscription/${encodeURIComponent(client_name)}`);
   const data = await handle<SubscriptionResponse>(res);

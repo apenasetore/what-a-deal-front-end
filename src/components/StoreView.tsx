@@ -14,7 +14,7 @@ const empty = (loja: string): NewDeal => ({
 });
 
 export function StoreView() {
-  const { name } = useSession();
+  const { name, email } = useSession();
   const [form, setForm] = useState<NewDeal>(() => empty(name));
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +30,7 @@ export function StoreView() {
     setStatus(null);
     setError(null);
     try {
-      const res = await createDeal({ ...form, loja: name });
+      const res = await createDeal({ ...form, loja: name, email: email });
       setStatus(res.data.status);
       setForm(empty(name));
     } catch (err) {
@@ -106,16 +106,6 @@ export function StoreView() {
               className={field}
               value={form.categoria}
               onChange={(e) => update("categoria", e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-slate-600">E-mail da loja</label>
-            <input
-              type="email"
-              className={field}
-              value={form.email}
-              onChange={(e) => update("email", e.target.value)}
               required
             />
           </div>
