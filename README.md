@@ -1,8 +1,10 @@
 # What A Deal — Frontend
 
 Frontend web (SPA) do sistema **What A Deal**, em **React + TypeScript (Vite)** — linguagem
-diferente do backend (Elixir). Comunica-se com o sistema **exclusivamente via API REST** do
-MS Gateway (`../what-a-deal`).
+diferente do backend (Elixir). Comunica-se com o sistema **exclusivamente através do
+MS Gateway** (`../what-a-deal`): API REST para as operações e **SSE** para as
+notificações em tempo real. As promoções cadastradas pela loja são **assinadas
+digitalmente no navegador** (RSA 2048, WebCrypto) antes de serem enviadas.
 
 ---
 
@@ -49,16 +51,23 @@ Abra no navegador: **http://localhost:5173**
 
 ### 3. Use a aplicação
 
-No topo da tela há um seletor de papel:
+A primeira tela é um **login simples** (sem senha): escolha um perfil e informe um nome.
 
-- **Loja** → cadastra promoções (`POST /deals`) e mostra o status de validação.
-- **Consumidor** → lista promoções (`GET /deals`), vota 👍/👎 (`POST /vote`),
-  segue e cancela categorias de interesse (`POST` / `DELETE /subscription`) e
-  recebe **notificações em tempo real** (SSE) das categorias seguidas — elas
-  aparecem como toasts no canto da tela e atualizam a lista automaticamente.
+- **Loja** → informa também um **e-mail**. Ao entrar, o frontend gera um **par de chaves
+  RSA 2048** no navegador, registra a loja no backend (`POST /store`, enviando a chave
+  pública em PEM) e guarda a chave privada no `localStorage`. Depois disso a loja
+  cadastra promoções (`POST /deals`): cada promoção é **assinada digitalmente** no
+  navegador antes do envio, e a tela mostra o status retornado pela validação.
+- **Consumidor** → lista promoções (`GET /deals`), filtra por categoria, vota 👍/👎
+  (`POST /vote` — **um voto por promoção**, controlado localmente), segue e cancela
+  categorias de interesse (`POST` / `DELETE` / `GET /subscription`) e recebe
+  **notificações em tempo real** (SSE) das categorias seguidas — elas aparecem como
+  toasts no canto da tela (🆕 nova promoção / 🔥 hot deal) e atualizam a lista
+  automaticamente.
 
-Não há login: você só informa um **nome** (usado para identificar a loja ou o cliente).
-O nome e o papel ficam salvos no navegador (sessionStorage).
+A sessão (perfil + nome + e-mail) fica salva no navegador (sessionStorage). Cada nome
+pertence a um único perfil: se "maria" entrou como cliente, não dá para entrar como
+loja "maria" na mesma sessão do navegador (registro em `src/identity.ts`).
 
 ---
 
@@ -126,9 +135,11 @@ React (:5173)  →  GET /api/deals  →  Vite proxy  →  GET /deals em :4000  �
    (mesma origem, sem CORS)                          (servidor↔servidor, sem CORS)
 ```
 
-O mesmo proxy serve o stream SSE: o `EventSource` abre
-`/api/notifications/<nome>`, que o Vite repassa para
-`GET /notifications/<nome>` em `:4000` mantendo a conexão aberta.
+**Exceção — o stream SSE não passa pelo proxy.** O `EventSource` conecta **direto**
+no Gateway, em `http://<host>:4000/stream/<nome>` (ver `src/hooks/useSSE.ts`), para
+manter a conexão de longa duração fora do proxy de dev. Como é uma chamada
+*cross-origin* feita pelo navegador, o endpoint de stream do Gateway precisa aceitar
+essa origem (requisições `GET` simples como essa não disparam preflight).
 
 > **E em produção?** Se o frontend buildado for servido em outro host/porta, o proxy de dev
 > não existe mais. Aí sim seria necessário **adicionar CORS no Gateway** (um plug que envie
@@ -140,23 +151,50 @@ O mesmo proxy serve o stream SSE: o `EventSource` abre
 
 ```
 src/
-├── api/client.ts                  # wrappers das rotas REST (base "/api")
-├── types.ts                       # Deal, NewDeal, Vote, SubscriptionResponse
-├── context/SessionContext.tsx     # papel (loja/consumidor) + nome (sessionStorage)
-├── hooks/useDeals.ts              # carrega GET /deals
-├── hooks/useSSE.ts                # EventSource em GET /notifications/:client_name
+├── api/
+│   ├── client.ts                  # wrappers das rotas REST (base "/api")
+│   └── crypto.ts                  # chaves RSA + assinatura das promoções (WebCrypto)
+├── types.ts                       # Deal, NewDeal, Store, Vote, SSENotification, ...
+├── identity.ts                    # registro nome -> perfil (um nome, um papel)
+├── votes.ts                       # controle local de 1 voto por cliente/promoção
+├── context/SessionContext.tsx     # sessão: perfil + nome + e-mail (sessionStorage)
+├── hooks/useDeals.ts              # carrega GET /deals (com refresh)
+├── hooks/useSSE.ts                # EventSource em http://<host>:4000/stream/:client_name
 └── components/
-    ├── Navbar.tsx                  # alterna papel loja/consumidor
-    ├── RoleGate.tsx                # define o nome da sessão
+    ├── Login.tsx                   # tela de entrada (perfil, nome, e-mail da loja)
+    ├── Navbar.tsx                  # mostra quem está logado + botão Sair
     ├── ConsumerView.tsx            # listar, filtrar, votar, interesses, SSE
-    ├── StoreView.tsx               # cadastrar promoção
-    ├── DealCard.tsx                # card com botões 👍 / 👎
+    ├── StoreView.tsx               # cadastrar promoção (assinada)
+    ├── DealCard.tsx                # card com botões 👍 / 👎 (1 voto por cliente)
     ├── NotificationToasts.tsx      # toasts das notificações SSE
     └── SubscriptionPanel.tsx       # seguir / cancelar categorias
 ```
 
 > **SSE:** as notificações em tempo real chegam pelo endpoint
-> `GET /notifications/:client_name` do Gateway (Server-Sent Events). O hook
-> `src/hooks/useSSE.ts` abre um `EventSource` para o cliente logado; cada evento
-> traz a promoção (`{ tipo, categoria, promo, ... }`) das categorias seguidas. O
-> `ConsumerView` mostra um toast e recarrega a lista a cada notificação.
+> `GET /stream/:client_name` do Gateway (Server-Sent Events), acessado direto em
+> `:4000` (sem proxy). O hook `src/hooks/useSSE.ts` abre um `EventSource` para o
+> cliente logado; cada evento traz a promoção (`{ tipo, categoria, promo, ... }`)
+> das categorias seguidas. O `ConsumerView` mostra um toast e recarrega a lista a
+> cada notificação.
+
+---
+
+## Assinatura digital das promoções
+
+O backend só publica promoções cuja assinatura confere com a chave pública
+registrada pela loja. O fluxo, todo em `src/api/crypto.ts` (WebCrypto):
+
+1. **No login da loja** é gerado um par **RSA 2048** (`RSASSA-PKCS1-v1_5` + SHA-256,
+   o mesmo algoritmo do `Shared.Crypto` do backend). A chave **pública** vai em PEM
+   no `POST /store`; a **privada** fica no `localStorage` do navegador
+   (`store_priv_key:<nome>`).
+2. **Ao cadastrar uma promoção**, o frontend monta a *mensagem canônica* — os campos
+   `loja|nome|descricao|categoria|email|preco_original|preco_promocional` unidos por
+   `|`, com preços em 2 casas decimais — assina com a chave privada e envia a
+   assinatura em Base64 junto do payload no `POST /deals`.
+3. O backend reconstrói exatamente a mesma string e verifica com
+   `:public_key.verify/4`, sem conversão de formato.
+
+> Como a chave privada vive no `localStorage`, ela só existe **naquele navegador**.
+> Se limpar o storage (ou trocar de máquina), entre de novo como loja para gerar e
+> registrar um novo par de chaves.
