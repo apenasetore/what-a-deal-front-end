@@ -9,12 +9,10 @@ const brl = (v: number) =>
 
 export function DealCard({ deal }: { deal: Deal }) {
   const { name } = useSession();
-  // Voto ja registrado por este cliente nesta promocao (persistido).
   const [myVote, setMyVote] = useState<Vote | undefined>(() => getVote(name, deal.id));
   const [pending, setPending] = useState<Vote | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Cada cliente tem direito a apenas um voto por promocao.
   const alreadyVoted = myVote !== undefined;
 
   async function handleVote(v: Vote) {

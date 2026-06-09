@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { getSubscriptions, subscribe, unsubscribe } from "../api/client";
 import { useSession } from "../context/SessionContext";
 
-// Painel de interesses do consumidor: seguir e cancelar categorias.
-// `suggestions` traz categorias derivadas das promocoes existentes.
+
 export function SubscriptionPanel({ suggestions }: { suggestions: string[] }) {
   const { name } = useSession();
   const [categories, setCategories] = useState<string[]>([]);

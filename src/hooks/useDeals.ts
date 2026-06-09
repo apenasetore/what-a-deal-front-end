@@ -9,8 +9,7 @@ interface UseDeals {
   refresh: () => void;
 }
 
-// Carrega a lista de promocoes de GET /deals. Como o SSE ainda nao esta
-// disponivel, a atualizacao e manual (botao) ou por polling leve opcional.
+
 export function useDeals(pollMs?: number): UseDeals {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);

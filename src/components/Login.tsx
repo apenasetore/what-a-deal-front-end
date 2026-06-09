@@ -22,7 +22,6 @@ export function Login() {
 
   const selected = ROLES.find((r) => r.key === role)!;
 
-  // Loja precisa de nome e email; consumidor só do nome.
   const disabled = !name.trim() || (role === "store" && !email.trim());
 
   return (

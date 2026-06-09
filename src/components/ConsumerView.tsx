@@ -13,8 +13,6 @@ export function ConsumerView() {
   const [filter, setFilter] = useState<string>("");
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  // Ao chegar uma notificacao das categorias seguidas: mostra um toast e
-  // recarrega a lista para exibir a promocao recem-publicada.
   const handleNotification = useCallback(
     (n: SSENotification) => {
       setToasts((prev) => [{ ...n, key: Date.now() + Math.random() }, ...prev].slice(0, 5));

@@ -1,7 +1,5 @@
 import type { Deal, NewDeal, SubscriptionResponse, Vote } from "../types";
 
-// Todas as chamadas usam o prefixo "/api", que o proxy do Vite reescreve para
-// http://localhost:4000 (ver vite.config.ts). Isso evita CORS em desenvolvimento.
 const BASE = "/api";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
@@ -14,7 +12,6 @@ async function handle<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-// GET /deals — lista promocoes ja validadas e publicadas.
 export async function listDeals(): Promise<Deal[]> {
   const res = await fetch(`${BASE}/deals`);
   return handle<Deal[]>(res);

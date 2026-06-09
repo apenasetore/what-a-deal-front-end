@@ -1,4 +1,3 @@
-// Espelha os dados trafegados pela API REST do Gateway
 export interface Deal {
   id: string;
   nome: string;
@@ -10,7 +9,6 @@ export interface Deal {
   email: string;
 }
 
-// Payload aceito por POST /deals (o backend gera o id ao publicar).
 export type NewDeal = Omit<Deal, "id">;
 
 export type Vote = "up" | "down";
