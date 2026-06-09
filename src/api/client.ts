@@ -1,4 +1,5 @@
-import type { Deal, NewDeal, SubscriptionResponse, Vote } from "../types";
+import type { Deal, NewDeal, SubscriptionResponse, Vote, Store, CreateStoreResponse } from "../types";
+import { generateStoreKeys, getSignature} from "./crypto";
 
 const BASE = "/api";
 
@@ -22,11 +23,26 @@ export interface CreateDealResponse {
   data: { promo_data: NewDeal; status: string };
 }
 
-export async function createDeal(payload: NewDeal): Promise<CreateDealResponse> {
-  const res = await fetch(`${BASE}/deals`, {
+
+export async function createStore(payload: Store): Promise<CreateStoreResponse> {
+  payload.pub_key = await generateStoreKeys(payload.nome);
+
+  const res = await fetch(`${BASE}/store`, {
     method: "POST",
     headers: JSON_HEADERS,
     body: JSON.stringify(payload),
+  });
+  return handle<CreateStoreResponse>(res);
+}
+
+export async function createDeal(payload: NewDeal): Promise<CreateDealResponse> {
+  const sign = await getSignature(payload);
+  const signedPayload = { ...payload, signature: sign };
+  
+  const res = await fetch(`${BASE}/deals`, {
+    method: "POST",
+    headers: JSON_HEADERS,
+    body: JSON.stringify(signedPayload),
   });
   return handle<CreateDealResponse>(res);
 }

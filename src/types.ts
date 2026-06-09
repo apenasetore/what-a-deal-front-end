@@ -9,9 +9,20 @@ export interface Deal {
   email: string;
 }
 
+export interface Store {
+  nome: string;
+  pub_key: string;
+}
+
 export type NewDeal = Omit<Deal, "id">;
 
 export type Vote = "up" | "down";
+
+
+export interface CreateStoreResponse {
+  message: string;
+  data: { promo_data: Store; status: string };
+}
 
 
 export interface SubscriptionResponse {
