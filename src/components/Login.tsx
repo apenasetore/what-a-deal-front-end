@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useSession } from "../context/SessionContext";
+import { createStore } from "../api/client";
 import type { Role } from "../types";
 
 const ROLES: { key: Role; label: string; hint: string }[] = [
@@ -14,10 +15,20 @@ export function Login() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const result = login(role, name, role === "store" ? email : "");
-    if (!result.ok) setError(result.error ?? "Não foi possível entrar.");
+    if (!result.ok) {
+      setError(result.error ?? "Não foi possível entrar.");
+      return;
+    }
+    if (role === "store") {
+      try {
+        await createStore({ nome: name, pub_key: "" });
+      } catch {
+        setError("Não foi possível criar a loja.");
+      }
+    }
   }
 
   const selected = ROLES.find((r) => r.key === role)!;
